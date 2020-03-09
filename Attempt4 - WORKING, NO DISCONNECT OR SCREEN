@@ -1,0 +1,110 @@
+/*
+  Simple POST client for ArduinoHttpClient library
+  Connects to server once every five seconds, sends a POST request
+  and a request body
+  created 14 Feb 2016
+  modified 22 Jan 2019
+  by Tom Igoe
+  
+  this example is in the public domain
+ */
+#include "dht.h"
+#include <SPI.h>
+#include <WiFiNINA.h>
+#include <ArduinoHttpClient.h>
+#include <Arduino_JSON.h>
+#include "arduino_secrets.h"
+
+///////please enter your sensitive data in the Secret tab/arduino_secrets.h
+/////// Wifi Settings ///////
+char ssid[] = SECRET_SSID;
+char pass[] = SECRET_PASS;
+
+char tom_server[] = "www.tigoe.io";  // server address
+int port = 443;
+
+WiFiSSLClient wifi;
+HttpClient client = HttpClient(wifi, "www.tigoe.io", 443);
+int status = WL_IDLE_STATUS;
+
+#define dht_apin A0 // Analog Pin DHT is connected to
+dht DHT;
+//the library is from here: https://www.brainy-bits.com/dht11-tutorial/
+
+//setting up JSONVar to put into another JSONVar called "state"
+JSONVar sensorinfo;
+
+void setup() {
+  Serial.begin(9600);
+  while ( status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to Network named: ");
+    Serial.println(SECRET_SSID);                   // print the network name (SSID);
+
+    // Connect to WPA/WPA2 network:
+    status = WiFi.begin(SECRET_SSID, SECRET_PASS);
+  }
+
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID()); 
+
+  if ( status != WL_CONNECTED) {
+    Serial.print("Disconnected from server.");
+  }
+
+  if ( status != WL_CONNECTED); 
+    Serial.println(SECRET_SSID);
+    status = WiFi.begin(SECRET_SSID, SECRET_PASS);
+    Serial.print("Connecting or reconnecting to server.");
+
+//  HOW TO WRITE IF NO DATA COMING FROM SENSOR?!
+//    Serial.print("Sensor not operational.");
+
+    delay(5000);
+  }
+
+void loop() {
+
+  //get sensor readings
+  DHT.read11(dht_apin);
+
+  Serial.print("Current humidity = ");
+  Serial.print(DHT.humidity);
+  Serial.print("%  ");
+  Serial.print("temperature = ");
+  Serial.print(DHT.temperature);
+  Serial.println("C  ");
+
+//feeding data into the JSONVar from earlier
+  sensorinfo["temperature"] = DHT.temperature;
+  sensorinfo["humidity"] = DHT.humidity; 
+
+//feeding above JSONVar info into new JSONVar with the sendRequest function
+  sendRequest(sensorinfo);
+  delay(1000);
+
+}
+
+void sendRequest(JSONVar state) {
+
+//make new JSONVar to hold the amount of information here (mac address, session key, the temp/humid data)
+  JSONVar author; 
+  author["macAddress"] = "2c:f0:ee:13:77:24";
+  author["sessionKey"] = "C038AF6A-5BD9-4D79-B7DB-1B4610738C7C";
+  author["data"] = JSON.stringify(state);
+
+  String request = "/data"; 
+  String contentType = "application/json";
+
+//stringify the JSONVar from above so it can be POSTed
+  String body = JSON.stringify(author);
+
+  // make a POST request to server:
+  client.post(request, contentType, body);
+
+  // read the status code and body of the response
+  int statusCode = client.responseStatusCode();
+  String response = client.responseBody();
+  
+
+}
