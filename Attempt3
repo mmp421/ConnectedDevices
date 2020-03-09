@@ -12,7 +12,7 @@ char pass[] = SECRET_PASS;
 dht DHT;
 //the library is from here: https://www.brainy-bits.com/dht11-tutorial/
 
-//setting up JSONVar to put into a JSONVar "State"
+//setting up JSONVar to put into another JSONVar called "state"
 JSONVar sensorinfo;
 
 int status = WL_IDLE_STATUS;
@@ -25,7 +25,7 @@ void setup() {
 
   Serial.begin(9600);
 
-//log in to the wifi
+//log on to the wifi
   while (!Serial);
   while ( WiFi.status() != WL_CONNECTED) {
     Serial.println(SECRET_SSID);
@@ -63,11 +63,11 @@ void loop() {
   Serial.print(DHT.temperature);
   Serial.println("C  ");
 
-//feeding into the JSONVar from earlier to feed into new JSONVar "state" below
+//feeding data into the JSONVar from earlier
   sensorinfo["temperature"] = DHT.temperature;
   sensorinfo["humidity"] = DHT.humidity; 
 
-//sending old JSONVar info to new JSONVar
+//feeding above JSONVar info into new JSONVar with the sendRequest function
   sendRequest(sensorinfo);
   delay(2000);
   
@@ -75,7 +75,7 @@ void loop() {
 
 void sendRequest(JSONVar state) {
 
-//make new JSONVar to keep the number of information here (mac address, session key, the temp/humid data)
+//make new JSONVar to hold the amount of information here (mac address, session key, the temp/humid data)
   JSONVar author; 
   author["macAddress"] = "2c:f0:ee:13:77:24";
   author["sessionKey"] = "C038AF6A-5BD9-4D79-B7DB-1B4610738C7C";
@@ -84,7 +84,7 @@ void sendRequest(JSONVar state) {
   String request = "/data"; 
   String contentType = "application/json";
 
-//stringify the JSONVar from above so can be POSTed
+//stringify the JSONVar from above so it can be POSTed
   String body = JSON.stringify(author);
 
   // make a POST request to server:
